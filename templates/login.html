@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login — ENORSUL</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: 'Inter', Arial, sans-serif;
+            background: #0f172a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+
+        .login-shell {
+            width: 100%;
+            max-width: 960px;
+            min-height: 580px;
+            display: grid;
+            grid-template-columns: 1.05fr 0.95fr;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.35);
+            background: #fff;
+        }
+
+        .login-brand {
+            position: relative;
+            padding: 48px 40px;
+            color: #fff;
+            background: linear-gradient(145deg, #c82333 0%, #8b1522 55%, #1e293b 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .login-brand::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(circle at 20% 20%, rgba(255,255,255,0.12), transparent 35%),
+                radial-gradient(circle at 80% 70%, rgba(255,255,255,0.08), transparent 30%);
+            pointer-events: none;
+        }
+
+        .brand-content { position: relative; z-index: 1; }
+
+        .brand-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 14px;
+            border-radius: 999px;
+            background: rgba(255,255,255,0.12);
+            border: 1px solid rgba(255,255,255,0.18);
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 0.4px;
+            margin-bottom: 28px;
+        }
+
+        .brand-title {
+            font-size: 34px;
+            font-weight: 700;
+            line-height: 1.15;
+            margin-bottom: 14px;
+        }
+
+        .brand-subtitle {
+            font-size: 15px;
+            line-height: 1.6;
+            color: rgba(255,255,255,0.86);
+            max-width: 320px;
+        }
+
+        .brand-features {
+            position: relative;
+            z-index: 1;
+            display: grid;
+            gap: 12px;
+            margin-top: 40px;
+        }
+
+        .feature-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 14px;
+            border-radius: 12px;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.1);
+            font-size: 13px;
+        }
+
+        .feature-icon {
+            width: 34px;
+            height: 34px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255,255,255,0.14);
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+
+        .login-panel {
+            padding: 48px 42px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            background: #ffffff;
+        }
+
+        .panel-header h2 {
+            font-size: 26px;
+            font-weight: 700;
+            color: #0f172a;
+            margin-bottom: 8px;
+        }
+
+        .panel-header p {
+            color: #64748b;
+            font-size: 14px;
+            margin-bottom: 28px;
+        }
+
+        .alert-modern {
+            border: none;
+            border-radius: 12px;
+            background: #fef2f2;
+            color: #b91c1c;
+            font-size: 13px;
+            padding: 12px 14px;
+            margin-bottom: 20px;
+        }
+
+        .form-group { margin-bottom: 18px; }
+
+        .form-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #334155;
+            margin-bottom: 8px;
+        }
+
+        .input-wrap {
+            position: relative;
+        }
+
+        .input-icon {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
+            font-size: 15px;
+            pointer-events: none;
+        }
+
+        .form-control-modern {
+            width: 100%;
+            height: 48px;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 0 44px 0 42px;
+            font-size: 14px;
+            color: #0f172a;
+            background: #f8fafc;
+            transition: all 0.2s ease;
+        }
+
+        .form-control-modern:focus {
+            outline: none;
+            border-color: #c82333;
+            background: #fff;
+            box-shadow: 0 0 0 4px rgba(200, 35, 51, 0.12);
+        }
+
+        .toggle-password {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            border: none;
+            background: transparent;
+            color: #64748b;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            padding: 4px 6px;
+        }
+
+        .btn-login {
+            width: 100%;
+            height: 50px;
+            border: none;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #c82333, #a71d2a);
+            color: #fff;
+            font-size: 15px;
+            font-weight: 700;
+            margin-top: 8px;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+            box-shadow: 0 10px 24px rgba(200, 35, 51, 0.25);
+        }
+
+        .btn-login:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 14px 28px rgba(200, 35, 51, 0.32);
+            color: #fff;
+        }
+
+        .login-footer {
+            margin-top: 24px;
+            text-align: center;
+            font-size: 12px;
+            color: #94a3b8;
+        }
+
+        @media (max-width: 860px) {
+            .login-shell {
+                grid-template-columns: 1fr;
+                max-width: 460px;
+            }
+            .login-brand { display: none; }
+            .login-panel { padding: 36px 28px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-shell">
+        <section class="login-brand">
+            <div class="brand-content">
+                <div class="brand-badge">🗺️ Plataforma Geoespacial</div>
+                <h1 class="brand-title">ENORSUL<br>Monitoramento Operacional</h1>
+                <p class="brand-subtitle">
+                    Sistema de análise e mapeamento de ligações comerciais por área, integrado ao banco de dados operacional.
+                </p>
+            </div>
+            <div class="brand-features">
+                <div class="feature-item">
+                    <div class="feature-icon">📍</div>
+                    <span>Visualização georreferenciada de ordens de serviço</span>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">📄</div>
+                    <span>Importação em lote de PDFs e exportação de relatórios</span>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">🔒</div>
+                    <span>Acesso seguro com autenticação corporativa</span>
+                </div>
+            </div>
+        </section>
+
+        <section class="login-panel">
+            <div class="panel-header">
+                <h2>Bem-vindo</h2>
+                <p>Entre com seu usuário e senha para acessar o sistema.</p>
+            </div>
+
+            {% if erro %}
+                <div class="alert-modern" role="alert">{{ erro }}</div>
+            {% endif %}
+
+            <form method="POST" autocomplete="on">
+                <div class="form-group">
+                    <label class="form-label" for="usuario">Usuário</label>
+                    <div class="input-wrap">
+                        <span class="input-icon">👤</span>
+                        <input
+                            type="text"
+                            id="usuario"
+                            name="usuario"
+                            class="form-control-modern"
+                            required
+                            autocomplete="username"
+                            autofocus
+                            placeholder="Digite seu login"
+                        >
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="senha">Senha</label>
+                    <div class="input-wrap">
+                        <span class="input-icon">🔑</span>
+                        <input
+                            type="password"
+                            id="senha"
+                            name="senha"
+                            class="form-control-modern"
+                            required
+                            autocomplete="current-password"
+                            placeholder="Digite sua senha"
+                        >
+                        <button type="button" class="toggle-password" onclick="alternarSenha()">Mostrar</button>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-login">Entrar no sistema</button>
+            </form>
+
+            <div class="login-footer">
+                ENORSUL © 2026 — Monitoramento Operacional de Ligações
+            </div>
+        </section>
+    </div>
+
+    <script>
+        function alternarSenha() {
+            var campo = document.getElementById('senha');
+            var botao = document.querySelector('.toggle-password');
+            if (campo.type === 'password') {
+                campo.type = 'text';
+                botao.textContent = 'Ocultar';
+            } else {
+                campo.type = 'password';
+                botao.textContent = 'Mostrar';
+            }
+        }
+    </script>
+</body>
+</html>

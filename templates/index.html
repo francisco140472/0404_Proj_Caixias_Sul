@@ -1,0 +1,1182 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ENORSUL - Monitoramento Operacional de Ligações</title>
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <!-- Leaflet Draw CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
+    
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+        }
+        body {
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+            background-color: #f4f6f9;
+        }
+        .sidebar {
+            width: 380px;
+            background: #ffffff;
+            border-right: 1px solid #ddd;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.05);
+            z-index: 1000;
+            overflow-y: auto;
+        }
+        .header-logo {
+            background: #c82333;
+            color: white;
+            padding: 15px;
+        }
+        .header-logo h2 {
+            font-size: 15px;
+            margin-bottom: 3px;
+        }
+        .header-logo p {
+            font-size: 11px;
+            opacity: 0.9;
+        }
+        .user-bar {
+            background: #f8f9fa;
+            border-bottom: 1px solid #eee;
+            padding: 8px 15px;
+            font-size: 11px;
+            color: #444;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+        }
+        .user-bar a {
+            color: #c82333;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .user-bar a:hover {
+            text-decoration: underline;
+        }
+        .section-box {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+        }
+        .section-box h3 {
+            font-size: 13px;
+            color: #333;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn {
+            width: 100%;
+            padding: 9px;
+            border: none;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 12px;
+            margin-top: 6px;
+            transition: background 0.2s;
+        }
+        .btn-primary { background: #0056b3; color: white; }
+        .btn-primary:hover { background: #004085; }
+        .btn-danger { background: #c82333; color: white; }
+        .btn-danger:hover { background: #a71d2a; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-success:hover { background: #218838; }
+        
+        input[type="file"], input[type="date"], input[type="text"], select {
+            font-size: 12px;
+            width: 100%;
+            padding: 6px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            margin-bottom: 6px;
+        }
+        .form-row {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            margin-bottom: 6px;
+            font-size: 12px;
+            color: #555;
+        }
+        #map {
+            flex-grow: 1;
+            height: 100%;
+        }
+        .status-text {
+            font-size: 11px;
+            color: #555;
+            margin-top: 6px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .spinner {
+            border: 3px solid rgba(0, 0, 0, 0.1);
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            border-left-color: #c82333;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .legend-list {
+            max-height: 200px;
+            overflow-y: auto;
+            font-size: 11px;
+            margin-top: 5px;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 6px;
+            padding: 4px 6px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .legend-item:hover { background: #f8f9fa; }
+        .legend-item input { margin-right: 6px; cursor: pointer; flex-shrink: 0; }
+        .legend-item-label {
+            display: flex;
+            align-items: center;
+            flex: 1;
+            min-width: 0;
+            overflow: hidden;
+        }
+        .tss-acoes {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+        .tss-acoes button {
+            flex: 1;
+            padding: 5px;
+            font-size: 10px;
+            border: 1px solid #ccc;
+            background: #f8f9fa;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .tss-acoes button:hover { background: #e9ecef; }
+        .legend-color-box {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 6px;
+            flex-shrink: 0;
+        }
+        .top-banner-area {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            background: #28a745;
+            color: white;
+            padding: 10px 18px;
+            border-radius: 6px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-size: 13px;
+            font-weight: bold;
+            display: none;
+        }
+        .top-banner-area span { cursor: pointer; font-size: 16px; }
+        
+        .stats-badge {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            background: white;
+            padding: 10px 15px;
+            border-radius: 6px;
+            box-shadow: 0 1px 6px rgba(0,0,0,0.2);
+            z-index: 999;
+            text-align: right;
+        }
+        .stats-badge .title {
+            font-size: 11px;
+            font-weight: bold;
+            color: #0056b3;
+            letter-spacing: 0.5px;
+        }
+        .stats-badge .number {
+            font-size: 22px;
+            font-weight: bold;
+            color: #0056b3;
+        }
+        .stats-badge .sub {
+            font-size: 11px;
+            color: #777;
+        }
+
+        /* Modal Customizado idêntico ao outro sistema */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background: white;
+            width: 650px;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 8px;
+        }
+        .close-modal { cursor: pointer; font-size: 18px; font-weight: bold; color: #888; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+        .modal-footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 15px; border-top: 1px solid #eee; padding-top: 10px; }
+        .btn-sm { width: auto; padding: 5px 10px; font-size: 11px; margin-top: 0; }
+        .funcionario-lista { max-height: 160px; overflow-y: auto; margin-top: 8px; border: 1px solid #eee; border-radius: 4px; }
+        .funcionario-item {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 8px 10px; border-bottom: 1px solid #f0f0f0; font-size: 11px;
+        }
+        .funcionario-item:last-child { border-bottom: none; }
+        .funcionario-item:hover { background: #f8f9fa; }
+        .funcionario-acoes { display: flex; gap: 4px; }
+        .funcionario-acoes button {
+            border: none; border-radius: 3px; padding: 3px 8px; font-size: 10px; cursor: pointer;
+        }
+        .btn-editar { background: #0056b3; color: white; }
+        .btn-excluir { background: #dc3545; color: white; }
+        .badge-email { font-size: 10px; color: #666; }
+        .select-funcionario { margin-bottom: 8px; }
+        .info-box { background: #e8f4fd; border: 1px solid #b8daff; border-radius: 4px; padding: 8px; font-size: 11px; color: #004085; margin-top: 6px; }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <div class="header-logo">
+            <h2>ENORSUL</h2>
+            <p>Monitoramento Operacional de Ligações</p>
+        </div>
+
+        <div class="user-bar">
+            <span>👤 {{ nome_usuario or 'Usuário' }}</span>
+            <a href="{{ url_for('logout') }}">Sair</a>
+        </div>
+
+        <div class="section-box">
+            <h3>📁 Carregar Pasta de PDFs</h3>
+            <input type="file" id="arquivos_pdf" webkitdirectory directory multiple>
+            <button class="btn btn-danger" onclick="enviarPDFs()">Gerar Mapa da Pasta</button>
+            <div id="status-processamento" class="status-text">Nenhuma pasta selecionada.</div>
+        </div>
+
+        <div class="section-box">
+            <h3>🔍 Filtros e Pesquisa</h3>
+            <div class="form-row">
+                <input type="date" id="filtro-data-inicio">
+                <span>até</span>
+                <input type="date" id="filtro-data-fim">
+            </div>
+            <input type="text" id="filtro-texto" placeholder="Digite nome, nº consumidor, OS..." oninput="aplicarFiltros()">
+            <button class="btn" style="background: #6c757d; color: white;" onclick="limparFiltros()">Limpar Filtros</button>
+        </div>
+
+        <div class="section-box">
+            <h3>⚙ Configurações do Mapa</h3>
+            <div style="display: flex; justify-content: space-between; font-size: 11px; color: #555;">
+                <span>Tamanho dos pontos</span>
+                <span id="label-tamanho">7px</span>
+            </div>
+            <input type="range" id="slider-tamanho" min="3" max="15" value="7" style="width: 100%; margin-top: 5px;" oninput="alterarTamanhoPontos(this.value)">
+            <p style="font-size: 10px; color: #888; margin-top: 4px;">Use a ferramenta de polígono no mapa para selecionar a área de análise.</p>
+        </div>
+
+        <div class="section-box">
+            <h3>📊 Filtro por Tipo TSS</h3>
+            <div class="tss-acoes">
+                <button type="button" onclick="selecionarTodosTss(true)">Marcar todos</button>
+                <button type="button" onclick="selecionarTodosTss(false)">Desmarcar todos</button>
+            </div>
+            <div id="legenda-tipos" class="legend-list">
+                <span style="font-size: 11px; color: #888;">Nenhum dado carregado.</span>
+            </div>
+        </div>
+
+        <div class="section-box">
+            <h3>👥 Cadastro de Funcionários</h3>
+            <button class="btn btn-primary" onclick="abrirModalFuncionario()">+ Novo Funcionário</button>
+            <div id="lista-funcionarios" class="funcionario-lista">
+                <span style="font-size: 11px; color: #888; padding: 10px; display: block;">Carregando...</span>
+            </div>
+        </div>
+
+        <div class="section-box">
+            <h3>📑 Exportação por Área / Polígono</h3>
+            <label style="font-size: 11px; font-weight: bold; color: #555;">Funcionário destinatário</label>
+            <select id="select-funcionario" class="select-funcionario">
+                <option value="">— Exportação geral (sem destinatário) —</option>
+            </select>
+            <button class="btn btn-success" onclick="exportarExcel()">📊 Gerar Excel Personalizado</button>
+            <button class="btn btn-primary" onclick="enviarExcelFuncionario()" style="background: #17a2b8;">📧 Enviar Excel por E-mail</button>
+            <button class="btn btn-primary" onclick="abrirModalPDF()" style="background: #0056b3;">📄 Gerar PDF do Polígono</button>
+            <button class="btn btn-danger" onclick="exportarPdfsCampo()">📁 Salvar PDFs na Pasta de Campo</button>
+            <div class="info-box">
+                Desenhe um polígono para filtrar a área. Os PDFs serão copiados para a pasta <b>pdfs_campo</b> do projeto.
+            </div>
+            <div class="info-box" style="background:#fff3cd;border-color:#ffeeba;color:#856404;margin-top:6px;">
+                Para envio por e-mail ao funcionário, selecione-o acima. Usa Outlook ou SMTP se configurado.
+            </div>
+        </div>
+    </div>
+
+    <!-- Aviso flutuante igual ao outro sistema quando desenha polígono -->
+    <div id="banner-area" class="top-banner-area">
+        Área selecionada — exportações usarão só o polígono. <span onclick="limparPoligono()">&times;</span>
+    </div>
+
+    <div class="stats-badge" id="badge-estatisticas">
+        <div class="title">LIGAÇÕES NO MAPA</div>
+        <div class="number" id="stat-total-mapeado">0</div>
+        <div class="sub" id="stat-subtexto">0 itens nos PDFs • 0 no SQL • 0 mapeados</div>
+    </div>
+
+    <div id="map"></div>
+
+    <!-- Modal de Exportação PDF idêntico ao seu modelo -->
+    <div id="modalPDF" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>🖨️ Exportar Mapa Comercial — PDF</h3>
+                <span class="close-modal" onclick="fecharModalPDF()">&times;</span>
+            </div>
+
+            <div style="margin-bottom: 8px;">
+                <label style="font-size: 11px; font-weight: bold; color: #555;">Título do mapa</label>
+                <input type="text" id="pdf-titulo" value="Mapa Comercial — Região Selecionada | Com e Sem Visita em Campo | Referência Atual">
+            </div>
+
+            <div class="grid-2">
+                <div>
+                    <label style="font-size: 11px; font-weight: bold; color: #555;">Referência (mês)</label>
+                    <input type="text" id="pdf-referencia" value="—">
+                </div>
+                <div>
+                    <label style="font-size: 11px; font-weight: bold; color: #555;">TSS</label>
+                    <input type="text" id="pdf-tss" value="—">
+                </div>
+            </div>
+
+            <div class="grid-3">
+                <div>
+                    <label style="font-size: 11px; font-weight: bold; color: #555;">Formato da folha</label>
+                    <select id="pdf-formato">
+                        <option value="A3" selected>A3 — 420 x 297 mm (recomendado)</option>
+                        <option value="A4">A4 — 297 x 210 mm</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="font-size: 11px; font-weight: bold; color: #555;">Total na área</label>
+                    <input type="text" id="pdf-total-area" readonly style="background: #e9ecef;">
+                </div>
+                <div>
+                    <label style="font-size: 11px; font-weight: bold; color: #555;">Escala cartográfica</label>
+                    <input type="text" id="pdf-escala" value="1:7.000">
+                </div>
+            </div>
+
+            <div class="grid-3">
+                <div>
+                    <label style="font-size: 11px; font-weight: bold; color: #555;">Data</label>
+                    <input type="text" id="pdf-data" value="">
+                </div>
+                <div>
+                    <label style="font-size: 11px; font-weight: bold; color: #555;">Elaborado</label>
+                    <input type="text" id="pdf-elaborado" value="{{ nome_usuario or '' }}" placeholder="Nome do elaborador">
+                </div>
+                <div>
+                    <label style="font-size: 11px; font-weight: bold; color: #555;">Folha</label>
+                    <input type="text" id="pdf-folha" value="01/01">
+                </div>
+            </div>
+
+            <div style="margin-bottom: 8px;">
+                <label style="font-size: 11px; font-weight: bold; color: #555;">Diretoria</label>
+                <input type="text" id="pdf-diretoria" value="DIRETORIA METROPOLITANA">
+            </div>
+
+            <div style="margin-bottom: 8px;">
+                <label style="font-size: 11px; font-weight: bold; color: #555;">Unidade de negócio</label>
+                <input type="text" id="pdf-unidade" value="UNIDADE DE NEGÓCIO CENTRO">
+            </div>
+
+            <div style="margin-bottom: 8px;">
+                <label style="font-size: 11px; font-weight: bold; color: #555; display: block; margin-bottom: 4px;">Status do desenho</label>
+                <div style="display: flex; gap: 15px; font-size: 11px; color: #444; flex-wrap: wrap;">
+                    <label><input type="radio" name="status_desenho" value="Somente informação"> Somente informação</label>
+                    <label><input type="radio" name="status_desenho" value="Preliminar" checked> Preliminar</label>
+                    <label><input type="radio" name="status_desenho" value="Para comentário cliente"> Para comentário cliente</label>
+                    <label><input type="radio" name="status_desenho" value="Final as-built"> Final as-built</label>
+                    <label><input type="radio" name="status_desenho" value="Final certificado"> Final certificado</label>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn" style="background: #6c757d; color: white; width: 100px;" onclick="fecharModalPDF()">Cancelar</button>
+                <button class="btn btn-primary" style="width: 140px;" onclick="executarExportacaoPDF()">Gerar PDF</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Cadastro de Funcionário -->
+    <div id="modalFuncionario" class="modal-overlay">
+        <div class="modal-content" style="width: 520px;">
+            <div class="modal-header">
+                <h3 id="titulo-modal-funcionario">👤 Cadastrar Funcionário</h3>
+                <span class="close-modal" onclick="fecharModalFuncionario()">&times;</span>
+            </div>
+
+            <input type="hidden" id="func-id">
+
+            <div class="grid-2">
+                <div>
+                    <label style="font-size: 11px; font-weight: bold; color: #555;">Nome completo *</label>
+                    <input type="text" id="func-nome" placeholder="Nome do funcionário">
+                </div>
+                <div>
+                    <label style="font-size: 11px; font-weight: bold; color: #555;">Matrícula</label>
+                    <input type="text" id="func-matricula" placeholder="Ex: 12345">
+                </div>
+            </div>
+
+            <div class="grid-2">
+                <div>
+                    <label style="font-size: 11px; font-weight: bold; color: #555;">Cargo</label>
+                    <input type="text" id="func-cargo" placeholder="Ex: Técnico de Campo">
+                </div>
+                <div>
+                    <label style="font-size: 11px; font-weight: bold; color: #555;">Setor</label>
+                    <input type="text" id="func-setor" placeholder="Ex: Operações">
+                </div>
+            </div>
+
+            <div class="grid-2">
+                <div>
+                    <label style="font-size: 11px; font-weight: bold; color: #555;">E-mail *</label>
+                    <input type="email" id="func-email" placeholder="email@empresa.com">
+                </div>
+                <div>
+                    <label style="font-size: 11px; font-weight: bold; color: #555;">Telefone</label>
+                    <input type="text" id="func-telefone" placeholder="(51) 99999-9999">
+                </div>
+            </div>
+
+            <div style="margin-top: 8px;">
+                <label style="font-size: 11px; color: #555;">
+                    <input type="checkbox" id="func-ativo" checked> Funcionário ativo
+                </label>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn" style="background: #6c757d; color: white; width: 100px;" onclick="fecharModalFuncionario()">Cancelar</button>
+                <button class="btn btn-success" style="width: 140px;" onclick="salvarFuncionario()">Salvar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leaflet & Turf Scripts -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Turf.js/6.5.0/turf.min.js"></script>
+
+    <script>
+        var map = L.map('map').setView([-29.1678, -51.1794], 13);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap'
+        }).addTo(map);
+
+        var markersLayer = L.layerGroup().addTo(map);
+        var drawnItems = new L.FeatureGroup().addTo(map);
+        map.addLayer(drawnItems);
+        
+        var globalFeatures = [];
+        var featuresAtuaisFiltradas = [];
+        var raioAtual = 7;
+        var poligonoAtivo = null;
+        var listaFuncionarios = [];
+        var tiposTssDisponiveis = {};
+        var tiposTssSelecionados = new Set();
+
+        document.addEventListener('DOMContentLoaded', function() {
+            carregarFuncionarios();
+        });
+
+        // Data atual no formato DD/MM/YYYY
+        var hoje = new Date();
+        document.getElementById('pdf-data').value = String(hoje.getDate()).padStart(2, '0') + '/' + 
+            String(hoje.getMonth() + 1).padStart(2, '0') + '/' + hoje.getFullYear();
+
+        var drawControl = new L.Control.Draw({
+            edit: { featureGroup: drawnItems },
+            draw: {
+                polygon: true,
+                rectangle: true,
+                circle: false,
+                marker: false,
+                circlemarker: false,
+                polyline: false
+            }
+        });
+        map.addControl(drawControl);
+
+        map.on(L.Draw.Event.CREATED, function (e) {
+            drawnItems.clearLayers();
+            var layer = e.layer;
+            drawnItems.addLayer(layer);
+            poligonoAtivo = layer.toGeoJSON();
+            document.getElementById('banner-area').style.display = 'flex';
+            document.getElementById('badge-estatisticas').style.right = '240px';
+            aplicarFiltros();
+        });
+
+        function limparPoligono() {
+            drawnItems.clearLayers();
+            poligonoAtivo = null;
+            document.getElementById('banner-area').style.display = 'none';
+            document.getElementById('badge-estatisticas').style.right = '20px';
+            aplicarFiltros();
+        }
+
+        function corPorTipoOS(tipo) {
+            if (!tipo) return "#6c757d";
+            var t = tipo.toUpperCase().trim();
+            if (t.includes("CORTE")) return "#dc3545";
+            if (t.includes("LIGA")) return "#007bff";
+            if (t.includes("RELIGA")) return "#28a745";
+            if (t.includes("HIDRO") || t.includes("TROCA")) return "#ffc107";
+            return "#6c757d";
+        }
+
+        function alterarTamanhoPontos(val) {
+            raioAtual = parseInt(val);
+            document.getElementById('label-tamanho').innerText = val + 'px';
+            desenharMarcadores(featuresAtuaisFiltradas);
+        }
+
+        function enviarPDFs() {
+            var inputFiles = document.getElementById('arquivos_pdf');
+            if (inputFiles.files.length === 0) {
+                alert("Selecione uma pasta contendo arquivos PDF.");
+                return;
+            }
+
+            var formData = new FormData();
+            var contadorPDFs = 0;
+
+            for (var i = 0; i < inputFiles.files.length; i++) {
+                var file = inputFiles.files[i];
+                if (file.name.toLowerCase().endsWith('.pdf')) {
+                    formData.append('arquivos_pdf', file);
+                    contadorPDFs++;
+                }
+            }
+
+            if (contadorPDFs === 0) {
+                alert("Nenhum arquivo PDF encontrado na pasta.");
+                return;
+            }
+
+            document.getElementById('status-processamento').innerHTML = `<div class="spinner"></div> Processando ${contadorPDFs} PDFs...`;
+
+            var tempoInicio = Date.now();
+
+            fetch('/processar_mapa', {
+                method: 'POST',
+                body: formData,
+                credentials: 'same-origin'
+            })
+            .then(response => {
+                if (response.status === 401) {
+                    window.location.href = '/login';
+                    throw new Error('Sessão expirada');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.erro) {
+                    alert(data.erro);
+                    document.getElementById('status-processamento').innerText = "Erro no processamento.";
+                    return;
+                }
+
+                var segundos = ((Date.now() - tempoInicio) / 1000).toFixed(0);
+                document.getElementById('status-processamento').innerHTML = `<span style="color: #28a745; font-weight: bold;">✔ Concluído em ${segundos}s!</span>`;
+
+                globalFeatures = data.geojson.features;
+                tiposTssSelecionados.clear();
+                construirChecklistTss();
+                document.getElementById('stat-subtexto').innerText = `${data.total_planilha} itens nos PDFs • ${data.total_sql} no SQL • ${data.total_mapeado} mapeados`;
+
+                aplicarFiltros();
+
+                if (globalFeatures.length > 0) {
+                    var group = new L.FeatureGroup(markersLayer.getLayers());
+                    map.fitBounds(group.getBounds());
+                }
+            })
+            .catch(error => {
+                console.error(error);
+                alert("Erro ao comunicar com o servidor.");
+                document.getElementById('status-processamento').innerText = "Erro de conexão.";
+            });
+        }
+
+        function obterTiposDaFeature(feat) {
+            var tipos = new Set();
+            if (feat.properties.Tipo) tipos.add(feat.properties.Tipo);
+            if (feat.properties.Servicos) {
+                feat.properties.Servicos.forEach(function(s) {
+                    if (s.Tipo) tipos.add(s.Tipo);
+                });
+            }
+            return tipos;
+        }
+
+        function featurePassaFiltroTss(feat) {
+            if (tiposTssSelecionados.size === 0) return false;
+            var tipos = obterTiposDaFeature(feat);
+            for (var tipo of tipos) {
+                if (tiposTssSelecionados.has(tipo)) return true;
+            }
+            return false;
+        }
+
+        function construirChecklistTss() {
+            tiposTssDisponiveis = {};
+            globalFeatures.forEach(function(feat) {
+                obterTiposDaFeature(feat).forEach(function(tipo) {
+                    tiposTssDisponiveis[tipo] = (tiposTssDisponiveis[tipo] || 0) + 1;
+                });
+            });
+
+            if (tiposTssSelecionados.size === 0) {
+                Object.keys(tiposTssDisponiveis).forEach(function(t) {
+                    tiposTssSelecionados.add(t);
+                });
+            }
+
+            renderizarChecklistTss();
+        }
+
+        function renderizarChecklistTss() {
+            var container = document.getElementById('legenda-tipos');
+            container.innerHTML = '';
+
+            var tipos = Object.keys(tiposTssDisponiveis).sort();
+            if (tipos.length === 0) {
+                container.innerHTML = '<span style="font-size: 11px; color: #888;">Nenhum tipo encontrado.</span>';
+                return;
+            }
+
+            tipos.forEach(function(tipo) {
+                var cor = corPorTipoOS(tipo);
+                var marcado = tiposTssSelecionados.has(tipo);
+                var div = document.createElement('label');
+                div.className = 'legend-item';
+                var checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.checked = marcado;
+                checkbox.addEventListener('change', function() {
+                    alternarTipoTss(tipo, checkbox.checked);
+                });
+                div.appendChild(checkbox);
+                var labelWrap = document.createElement('div');
+                labelWrap.className = 'legend-item-label';
+                labelWrap.innerHTML =
+                    '<span class="legend-color-box" style="background:' + cor + ';"></span>' +
+                    '<span title="' + tipo.replace(/"/g, '&quot;') + '" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + tipo + '</span>';
+                div.appendChild(labelWrap);
+                var qtd = document.createElement('b');
+                qtd.textContent = tiposTssDisponiveis[tipo];
+                div.appendChild(qtd);
+                container.appendChild(div);
+            });
+        }
+
+        function alternarTipoTss(tipo, ativo) {
+            if (ativo) tiposTssSelecionados.add(tipo);
+            else tiposTssSelecionados.delete(tipo);
+            aplicarFiltros();
+        }
+
+        function selecionarTodosTss(marcar) {
+            if (marcar) {
+                Object.keys(tiposTssDisponiveis).forEach(function(t) {
+                    tiposTssSelecionados.add(t);
+                });
+            } else {
+                tiposTssSelecionados.clear();
+            }
+            renderizarChecklistTss();
+            aplicarFiltros();
+        }
+
+        function desenharMarcadores(features) {
+            markersLayer.clearLayers();
+            var tiposContador = {};
+
+            features.forEach(feat => {
+                var coords = feat.geometry.coordinates;
+                var props = feat.properties;
+                var tipoOS = props.Tipo || "Não Definido";
+                var totalServicos = props.Total_Servicos || 1;
+                
+                tiposContador[tipoOS] = (tiposContador[tipoOS] || 0) + totalServicos;
+                var cor = corPorTipoOS(tipoOS);
+
+                var markerHtml = '';
+                if (totalServicos > 1) {
+                    markerHtml = `<div style="background: ${cor}; color: white; border: 2px solid white; border-radius: 50%; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.3);">${totalServicos}</div>`;
+                } else {
+                    markerHtml = `<div style="background: ${cor}; border: 2px solid white; border-radius: 50%; width: ${raioAtual * 2}px; height: ${raioAtual * 2}px; box-shadow: 0 1px 3px rgba(0,0,0,0.3);"></div>`;
+                }
+
+                var customIcon = L.divIcon({
+                    className: 'custom-marker',
+                    html: markerHtml,
+                    iconSize: totalServicos > 1 ? [22, 22] : [raioAtual * 2, raioAtual * 2],
+                    iconAnchor: totalServicos > 1 ? [11, 11] : [raioAtual, raioAtual]
+                });
+
+                var marker = L.marker([coords[1], coords[0]], { icon: customIcon });
+
+                var htmlPopup = `<b>Inscrição ZSQL:</b> ${props.Inscricao_ZSQL}<br><b>Consumidor:</b> ${props.Nome_Consumidor}<br><b>Total de Serviços:</b> ${props.Total_Servicos}<br><hr style="margin: 4px 0;">`;
+                if (props.Servicos && props.Servicos.length > 0) {
+                    props.Servicos.forEach((serv, idx) => {
+                        htmlPopup += `<b>#${idx+1} OS:</b> ${serv.OS_Numero} | <b>Tipo:</b> <span style="color: ${cor};">${serv.Tipo}</span><br>`;
+                    });
+                }
+
+                marker.bindPopup(htmlPopup, { maxHeight: 220 });
+                markersLayer.addLayer(marker);
+            });
+        }
+
+        function aplicarFiltros() {
+            var textoBusca = document.getElementById('filtro-texto').value.toLowerCase();
+            
+            featuresAtuaisFiltradas = globalFeatures.filter(feat => {
+                var p = feat.properties;
+                var textoMatch = !textoBusca || 
+                    (p.Nome_Consumidor && p.Nome_Consumidor.toLowerCase().includes(textoBusca)) ||
+                    (p.Inscricao_ZSQL && p.Inscricao_ZSQL.toLowerCase().includes(textoBusca)) ||
+                    (p.Servicos && p.Servicos.some(s => s.OS_Numero.toLowerCase().includes(textoBusca) || s.Tipo.toLowerCase().includes(textoBusca)));
+
+                if (!textoMatch) return false;
+                if (!featurePassaFiltroTss(feat)) return false;
+
+                if (poligonoAtivo) {
+                    var pt = turf.point(feat.geometry.coordinates);
+                    if (!turf.booleanPointInPolygon(pt, poligonoAtivo)) return false;
+                }
+                return true;
+            });
+
+            desenharMarcadores(featuresAtuaisFiltradas);
+            document.getElementById('stat-total-mapeado').innerText = featuresAtuaisFiltradas.length;
+        }
+
+        function limparFiltros() {
+            document.getElementById('filtro-texto').value = '';
+            document.getElementById('filtro-data-inicio').value = '';
+            document.getElementById('filtro-data-fim').value = '';
+            tiposTssSelecionados.clear();
+            construirChecklistTss();
+            limparPoligono();
+        }
+
+        function obterDadosExportacao() {
+            return featuresAtuaisFiltradas.length > 0 ? featuresAtuaisFiltradas : globalFeatures;
+        }
+
+        function obterFuncionarioSelecionadoId() {
+            return document.getElementById('select-funcionario').value || null;
+        }
+
+        // ==========================================
+        // MÓDULO DE FUNCIONÁRIOS
+        // ==========================================
+        function carregarFuncionarios() {
+            fetch('/funcionarios?todos=1', { credentials: 'same-origin' })
+            .then(response => {
+                if (response.status === 401) {
+                    window.location.href = '/login';
+                    throw new Error('Sessão expirada');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.erro) throw new Error(data.erro);
+                listaFuncionarios = data;
+                renderizarListaFuncionarios();
+                atualizarSelectFuncionarios();
+            })
+            .catch(error => {
+                document.getElementById('lista-funcionarios').innerHTML =
+                    '<span style="font-size:11px;color:#dc3545;padding:10px;display:block;">Erro ao carregar funcionários.</span>';
+                console.error(error);
+            });
+        }
+
+        function renderizarListaFuncionarios() {
+            var container = document.getElementById('lista-funcionarios');
+            if (!listaFuncionarios.length) {
+                container.innerHTML = '<span style="font-size:11px;color:#888;padding:10px;display:block;">Nenhum funcionário cadastrado.</span>';
+                return;
+            }
+
+            container.innerHTML = '';
+            listaFuncionarios.forEach(function(func) {
+                var ativo = func.ativo === 'S' || func.ativo === true;
+                var div = document.createElement('div');
+                div.className = 'funcionario-item';
+                div.innerHTML =
+                    '<div style="flex:1;min-width:0;">' +
+                        '<div style="font-weight:bold;color:#333;">' + func.nome +
+                        (ativo ? '' : ' <span style="color:#999;">(inativo)</span>') + '</div>' +
+                        '<div class="badge-email">' + (func.cargo || '—') +
+                        (func.email ? ' • ' + func.email : '') + '</div>' +
+                    '</div>' +
+                    '<div class="funcionario-acoes">' +
+                        '<button class="btn-editar" onclick="editarFuncionario(' + func.id + ')">Editar</button>' +
+                        '<button class="btn-excluir" onclick="excluirFuncionario(' + func.id + ', \'' + func.nome.replace(/'/g, "\\'") + '\')">Remover</button>' +
+                    '</div>';
+                container.appendChild(div);
+            });
+        }
+
+        function atualizarSelectFuncionarios() {
+            var select = document.getElementById('select-funcionario');
+            var valorAtual = select.value;
+            select.innerHTML = '<option value="">— Exportação geral (sem destinatário) —</option>';
+
+            listaFuncionarios
+                .filter(function(f) { return f.ativo === 'S' || f.ativo === true; })
+                .forEach(function(func) {
+                    var opt = document.createElement('option');
+                    opt.value = func.id;
+                    opt.textContent = func.nome + (func.setor ? ' (' + func.setor + ')' : '');
+                    select.appendChild(opt);
+                });
+
+            if (valorAtual) select.value = valorAtual;
+        }
+
+        function abrirModalFuncionario(funcionario) {
+            document.getElementById('func-id').value = funcionario ? funcionario.id : '';
+            document.getElementById('func-nome').value = funcionario ? funcionario.nome : '';
+            document.getElementById('func-matricula').value = funcionario ? (funcionario.matricula || '') : '';
+            document.getElementById('func-cargo').value = funcionario ? (funcionario.cargo || '') : '';
+            document.getElementById('func-setor').value = funcionario ? (funcionario.setor || '') : '';
+            document.getElementById('func-email').value = funcionario ? (funcionario.email || '') : '';
+            document.getElementById('func-telefone').value = funcionario ? (funcionario.telefone || '') : '';
+            document.getElementById('func-ativo').checked = funcionario ? (funcionario.ativo === 'S' || funcionario.ativo === true) : true;
+            document.getElementById('titulo-modal-funcionario').innerText = funcionario ? '✏️ Editar Funcionário' : '👤 Cadastrar Funcionário';
+            document.getElementById('modalFuncionario').style.display = 'flex';
+        }
+
+        function fecharModalFuncionario() {
+            document.getElementById('modalFuncionario').style.display = 'none';
+        }
+
+        function editarFuncionario(id) {
+            var func = listaFuncionarios.find(function(f) { return f.id == id; });
+            if (func) abrirModalFuncionario(func);
+        }
+
+        function salvarFuncionario() {
+            var id = document.getElementById('func-id').value;
+            var payload = {
+                nome: document.getElementById('func-nome').value.trim(),
+                matricula: document.getElementById('func-matricula').value.trim(),
+                cargo: document.getElementById('func-cargo').value.trim(),
+                setor: document.getElementById('func-setor').value.trim(),
+                email: document.getElementById('func-email').value.trim(),
+                telefone: document.getElementById('func-telefone').value.trim(),
+                ativo: document.getElementById('func-ativo').checked
+            };
+
+            if (!payload.nome) {
+                alert('Informe o nome do funcionário.');
+                return;
+            }
+
+            var url = id ? '/funcionarios/' + id : '/funcionarios';
+            var method = id ? 'PUT' : 'POST';
+
+            fetch(url, {
+                method: method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+                credentials: 'same-origin'
+            })
+            .then(response => response.json().then(data => ({ ok: response.ok, data: data })))
+            .then(result => {
+                if (!result.ok) throw new Error(result.data.erro || 'Erro ao salvar funcionário.');
+                fecharModalFuncionario();
+                carregarFuncionarios();
+                alert(result.data.mensagem || 'Funcionário salvo com sucesso.');
+            })
+            .catch(error => alert(error.message));
+        }
+
+        function excluirFuncionario(id, nome) {
+            if (!confirm('Deseja remover o funcionário "' + nome + '"?')) return;
+
+            fetch('/funcionarios/' + id, {
+                method: 'DELETE',
+                credentials: 'same-origin'
+            })
+            .then(response => response.json().then(data => ({ ok: response.ok, data: data })))
+            .then(result => {
+                if (!result.ok) throw new Error(result.data.erro || 'Erro ao remover funcionário.');
+                carregarFuncionarios();
+                alert(result.data.mensagem || 'Funcionário removido.');
+            })
+            .catch(error => alert(error.message));
+        }
+
+        function exportarExcel() {
+            var dadosExportar = obterDadosExportacao();
+            if (dadosExportar.length === 0) {
+                alert("Nenhum dado disponível para exportar.");
+                return;
+            }
+
+            var funcionarioId = obterFuncionarioSelecionadoId();
+            var payload = { features: dadosExportar };
+            if (funcionarioId) payload.funcionario_id = funcionarioId;
+
+            fetch('/exportar_excel', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+                credentials: 'same-origin'
+            })
+            .then(response => {
+                if (response.status === 401) {
+                    window.location.href = '/login';
+                    throw new Error('Sessão expirada');
+                }
+                if (!response.ok) return response.json().then(d => { throw new Error(d.erro || 'Erro ao exportar Excel'); });
+                return response.blob();
+            })
+            .then(blob => {
+                var url = window.URL.createObjectURL(blob);
+                var a = document.createElement('a');
+                a.href = url;
+                a.download = funcionarioId ? 'relatorio_funcionario.xlsx' : 'relatorio_ligacoes_area.xlsx';
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                window.URL.revokeObjectURL(url);
+            })
+            .catch(error => alert(error.message || "Erro ao gerar Excel."));
+        }
+
+        function enviarExcelFuncionario() {
+            var dadosExportar = obterDadosExportacao();
+            if (dadosExportar.length === 0) {
+                alert("Nenhum dado disponível para exportar.");
+                return;
+            }
+
+            var funcionarioId = obterFuncionarioSelecionadoId();
+            if (!funcionarioId) {
+                alert("Selecione o funcionário que receberá o relatório.");
+                return;
+            }
+
+            var func = listaFuncionarios.find(function(f) { return f.id == funcionarioId; });
+            if (!func || !func.email) {
+                alert("O funcionário selecionado não possui e-mail cadastrado.");
+                return;
+            }
+
+            if (!confirm('Enviar relatório com ' + dadosExportar.length + ' ligações para ' + func.email + '?')) {
+                return;
+            }
+
+            fetch('/enviar_excel_funcionario', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    features: dadosExportar,
+                    funcionario_id: funcionarioId
+                }),
+                credentials: 'same-origin'
+            })
+            .then(response => response.json().then(data => ({ ok: response.ok, data: data })))
+            .then(result => {
+                if (!result.ok) {
+                    var msg = result.data.erro || 'Erro ao enviar e-mail.';
+                    if (confirm(msg + '\n\nDeseja baixar o Excel agora para enviar manualmente?')) {
+                        exportarExcel();
+                    }
+                    return;
+                }
+                alert(result.data.mensagem);
+            })
+            .catch(error => alert(error.message));
+        }
+
+        function exportarPdfsCampo() {
+            var dadosExportar = obterDadosExportacao();
+            if (dadosExportar.length === 0) {
+                alert('Nenhuma ligação na seleção atual para exportar PDFs.');
+                return;
+            }
+
+            if (!poligonoAtivo) {
+                if (!confirm('Nenhum polígono desenhado. Deseja exportar PDFs de TODA a seleção atual (filtros + TSS)?')) {
+                    return;
+                }
+            }
+
+            fetch('/exportar_pdfs_campo', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ features: dadosExportar }),
+                credentials: 'same-origin'
+            })
+            .then(async function(response) {
+                var contentType = response.headers.get('content-type') || '';
+                if (contentType.indexOf('application/json') === -1) {
+                    throw new Error('Servidor retornou resposta inválida. Reinicie o Flask (app.py) e tente novamente.');
+                }
+                var data = await response.json();
+                if (response.status === 401) {
+                    window.location.href = '/login';
+                    throw new Error('Sessão expirada');
+                }
+                if (!response.ok) {
+                    throw new Error(data.erro || 'Erro ao salvar PDFs na pasta.');
+                }
+                return data;
+            })
+            .then(function(data) {
+                var msg = data.mensagem + '\n\nPasta:\n' + data.pasta;
+                if (data.nao_encontrados && data.nao_encontrados.length > 0) {
+                    msg += '\n\nNão encontrados (' + data.nao_encontrados.length + '):\n' + data.nao_encontrados.slice(0, 5).join('\n');
+                }
+                alert(msg);
+            })
+            .catch(function(error) {
+                alert(error.message);
+            });
+        }
+
+        function abrirModalPDF() {
+            var dadosExportar = featuresAtuaisFiltradas.length > 0 ? featuresAtuaisFiltradas : globalFeatures;
+            if (dadosExportar.length === 0) {
+                alert("Carregue os dados primeiro para gerar o PDF.");
+                return;
+            }
+            document.getElementById('pdf-total-area').value = dadosExportar.length + " ligações na área";
+            document.getElementById('modalPDF').style.display = 'flex';
+        }
+
+        function fecharModalPDF() {
+            document.getElementById('modalPDF').style.display = 'none';
+        }
+
+        function executarExportacaoPDF() {
+            var dadosExportar = featuresAtuaisFiltradas.length > 0 ? featuresAtuaisFiltradas : globalFeatures;
+            
+            var statusSelecionado = document.querySelector('input[name="status_desenho"]:checked').value;
+
+            var metadata = {
+                titulo: document.getElementById('pdf-titulo').value,
+                referencia: document.getElementById('pdf-referencia').value,
+                tss: document.getElementById('pdf-tss').value,
+                formato: document.getElementById('pdf-formato').value,
+                escala: document.getElementById('pdf-escala').value,
+                data: document.getElementById('pdf-data').value,
+                elaborado: document.getElementById('pdf-elaborado').value,
+                folha: document.getElementById('pdf-folha').value,
+                diretoria: document.getElementById('pdf-diretoria').value,
+                unidade: document.getElementById('pdf-unidade').value,
+                status_desenho: statusSelecionado
+            };
+
+            var btnPdf = document.querySelector('#modalPDF .btn-primary');
+            var textoOriginal = btnPdf.innerText;
+            btnPdf.disabled = true;
+            btnPdf.innerText = 'Gerando...';
+
+            fetch('/exportar_pdf', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ features: dadosExportar, metadata: metadata }),
+                credentials: 'same-origin'
+            })
+            .then(response => {
+                if (response.status === 401) {
+                    window.location.href = '/login';
+                    throw new Error('Sessão expirada');
+                }
+                if (!response.ok) {
+                    return response.json().then(d => { throw new Error(d.erro || 'Erro ao gerar PDF'); });
+                }
+                return response.blob();
+            })
+            .then(blob => {
+                var url = window.URL.createObjectURL(blob);
+                var a = document.createElement('a');
+                a.href = url;
+                a.download = "mapa_comercial_relatorio.pdf";
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                window.URL.revokeObjectURL(url);
+                fecharModalPDF();
+            })
+            .catch(error => alert(error.message || "Erro ao gerar PDF."))
+            .finally(() => {
+                btnPdf.disabled = false;
+                btnPdf.innerText = textoOriginal;
+            });
+        }
+    </script>
+</body>
+</html>

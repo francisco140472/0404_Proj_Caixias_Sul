@@ -1,0 +1,8 @@
+{
+  "smtp_server": "smtp.seudominio.com.br",
+  "smtp_port": 587,
+  "smtp_user": "seu_usuario@empresa.com.br",
+  "smtp_password": "sua_senha",
+  "smtp_from": "relatorios@empresa.com.br",
+  "use_tls": true
+}
